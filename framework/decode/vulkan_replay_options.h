@@ -33,6 +33,7 @@ struct ReplayOptions
     bool                    skip_failed_allocations{ false };
     bool                    omit_pipeline_cache_data{ false };
     int32_t                 override_gpu_index{ -1 };
+    std::string             perfetto_output_name{ "perfetto-trace.pb" };
     CreateResourceAllocator create_resource_allocator{ nullptr };
     std::string             replace_dir{};
 };

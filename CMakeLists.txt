@@ -134,6 +134,11 @@ target_compile_definitions(linux_specific INTERFACE _FILE_OFFSET_BITS=64 PAGE_GU
     $<$<BOOL:${WAYLAND_FOUND}>:VK_USE_PLATFORM_WAYLAND_KHR>)
 target_compile_options(linux_specific INTERFACE -Werror)
 
+# FIXME: This needs to be conditioned out using GFXRECON_ENABLE_PERFETTO
+include_directories(perfetto/sdk)
+add_library(perfetto STATIC perfetto/sdk/perfetto.cc)
+target_compile_definitions(linux_specific INTERFACE GFXRECON_ENABLE_PERFETTO)
+
 add_library(platform_specific INTERFACE)
 target_link_libraries(platform_specific INTERFACE
     $<$<BOOL:${WIN32}>:windows_specific>

@@ -30,6 +30,12 @@
 #include <limits>
 #include <unordered_set>
 
+#if 1 || defined(GFXRECON_ENABLE_PERFETTO)
+extern void InitializePerfetto();
+extern std::unique_ptr<perfetto::TracingSession> StartTracing();
+extern void StopTracing(std::unique_ptr<perfetto::TracingSession>, const gfxrecon::decode::ReplayOptions&);
+#endif // GFXRECON_ENABLE_PERFETTO
+
 GFXRECON_BEGIN_NAMESPACE(gfxrecon)
 GFXRECON_BEGIN_NAMESPACE(decode)
 
@@ -138,6 +144,11 @@ VulkanReplayConsumerBase::VulkanReplayConsumerBase(WindowFactory* window_factory
 {
     assert(window_factory != nullptr);
     assert(options.create_resource_allocator != nullptr);
+#if 1 || defined(GFXRECON_ENABLE_PERFETTO)
+    InitializePerfetto();
+    perfetto_tracing_session_ = StartTracing();
+#endif
+
 }
 
 VulkanReplayConsumerBase::~VulkanReplayConsumerBase()
@@ -185,6 +196,13 @@ VulkanReplayConsumerBase::~VulkanReplayConsumerBase()
     {
         util::platform::CloseLibrary(loader_handle_);
     }
+
+#if 1 || defined(GFXRECON_ENABLE_PERFETTO)
+    if (perfetto_tracing_session_)
+    {
+         StopTracing(std::move(perfetto_tracing_session_), options_);
+    }
+#endif
 }
 
 void VulkanReplayConsumerBase::ProcessStateBeginMarker(uint64_t frame_number)

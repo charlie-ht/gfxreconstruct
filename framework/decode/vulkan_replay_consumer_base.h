@@ -46,6 +46,11 @@
 #include <unordered_set>
 #include <vector>
 
+#if 1 || defined(GFXRECON_ENABLE_PERFETTO)
+#include <fstream>
+#include "perfetto.h"
+#endif
+
 // Types provided by this file are defined by format/platform_types.h when VK_USE_PLATFORM_ANDROID_KHR is not set.
 #if defined(VK_USE_PLATFORM_ANDROID_KHR)
 #include <android/hardware_buffer.h>
@@ -718,6 +723,7 @@ class VulkanReplayConsumerBase : public VulkanConsumer
     HardwareBufferMemoryMap                                          hardware_buffer_memory_info_;
     std::unordered_set<format::HandleId>                             active_instance_ids_;
     std::unordered_set<format::HandleId>                             active_device_ids_;
+    std::unique_ptr<perfetto::TracingSession>                        perfetto_tracing_session_;
 };
 
 GFXRECON_END_NAMESPACE(decode)

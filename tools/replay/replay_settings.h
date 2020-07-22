@@ -50,10 +50,11 @@ const char kMemoryPortabilityShortOption[]     = "-m";
 const char kMemoryPortabilityLongOption[]      = "--memory-translation";
 const char kShaderReplaceArgument[]            = "--replace-shaders";
 const char kNoDebugPopup[]                     = "--no-debug-popup";
+const char kPerfettoTraceOutput[]              = "--perfetto-trace-output";
 
 const char kOptions[] =
     "-h|--help,--version,--paused,--sfa|--skip-failed-allocations,--opcd|--omit-pipeline-cache-data,--no-debug-popup";
-const char kArguments[] = "--gpu,--pause-frame,--wsi,-m|--memory-translation,--replace-shaders";
+const char kArguments[] = "--gpu,--pause-frame,--wsi,-m|--memory-translation,--replace-shaders,--perfetto-trace-output";
 
 enum class WsiPlatform
 {
@@ -226,6 +227,13 @@ static gfxrecon::decode::ReplayOptions GetReplayOptions(const gfxrecon::util::Ar
         replay_options.override_gpu_index = std::stoi(override_gpu);
     }
 
+    std::string                     perfetto_output_name = arg_parser.GetArgumentValue(kPerfettoTraceOutput);
+
+    if (!perfetto_output_name.empty())
+    {
+         replay_options.perfetto_output_name = perfetto_output_name;
+    }
+
     if (arg_parser.IsOptionSet(kSkipFailedAllocationLongOption) ||
         arg_parser.IsOptionSet(kSkipFailedAllocationShortOption))
     {
@@ -331,6 +339,9 @@ static void PrintUsage(const char* exe_name)
     GFXRECON_WRITE_CONSOLE("          \t\t         \tto different allocations with different");
     GFXRECON_WRITE_CONSOLE("          \t\t         \toffsets.  Uses VMA to manage allocations");
     GFXRECON_WRITE_CONSOLE("          \t\t         \tand suballocations.");
+#if 1
+    GFXRECON_WRITE_CONSOLE("  --perfetto-trace-output <output_file>\t\tFile to write trace output to");
+#endif
 }
 
 static bool CheckOptionPrintUsage(const char* exe_name, const gfxrecon::util::ArgumentParser& arg_parser)

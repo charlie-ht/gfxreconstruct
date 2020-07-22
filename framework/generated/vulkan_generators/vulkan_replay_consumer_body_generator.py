@@ -74,6 +74,56 @@ class VulkanReplayConsumerBodyGenerator(BaseGenerator):
         write('#include "generated/generated_vulkan_dispatch_table.h"', file=self.outFile)
         write('#include "generated/generated_vulkan_struct_handle_mappers.h"', file=self.outFile)
         write('#include "util/defines.h"', file=self.outFile)
+        write('#if 1 || defined(GFXRECON_ENABLE_PERFETTO)', file=self.outFile)
+        write('#include "perfetto.h"', file=self.outFile)
+        write('PERFETTO_DEFINE_CATEGORIES(perfetto::Category("replay").SetDescription("All calls to the Vulkan API"));', file=self.outFile)
+        write('''// Reserves internal static storage for our tracing categories.
+PERFETTO_TRACK_EVENT_STATIC_STORAGE();''', file=self.outFile)
+        write('''
+void InitializePerfetto() {
+  perfetto::TracingInitArgs args;
+  // The backends determine where trace events are recorded. For this example we
+  // are going to use the in-process tracing service, which only includes in-app
+  // events.
+  args.backends = perfetto::kInProcessBackend;
+
+  perfetto::Tracing::Initialize(args);
+  perfetto::TrackEvent::Register();
+}
+
+std::unique_ptr<perfetto::TracingSession> StartTracing() {
+  // The trace config defines which types of data sources are enabled for
+  // recording. In this example we just need the "track_event" data source,
+  // which corresponds to the TRACE_EVENT trace points.
+  perfetto::TraceConfig cfg;
+  cfg.add_buffers()->set_size_kb(1024);
+  auto* ds_cfg = cfg.add_data_sources()->mutable_config();
+  ds_cfg->set_name("track_event");
+
+  auto tracing_session = perfetto::Tracing::NewTrace();
+  tracing_session->Setup(cfg);
+  tracing_session->StartBlocking();
+  return tracing_session;
+}
+
+void StopTracing(std::unique_ptr<perfetto::TracingSession> tracing_session, const gfxrecon::decode::ReplayOptions& options) {
+  // Make sure the last event is closed for this example.
+  perfetto::TrackEvent::Flush();
+
+  // Stop tracing and read the trace data.
+  tracing_session->StopBlocking();
+  std::vector<char> trace_data(tracing_session->ReadTraceBlocking());
+
+  // Write the result into a file.
+  // Note: To save memory with longer traces, you can tell Perfetto to write
+  // directly into a file by passing a file descriptor into Setup() above.
+  std::ofstream output;
+  output.open(options.perfetto_output_name, std::ios::out | std::ios::binary);
+  output.write(&trace_data[0], trace_data.size());
+  output.close();
+}
+''', file=self.outFile)
+        write('#endif // GFXRECON_ENABLE_PERFETTO', file=self.outFile)
         self.newline()
         write('GFXRECON_BEGIN_NAMESPACE(gfxrecon)', file=self.outFile)
         write('GFXRECON_BEGIN_NAMESPACE(decode)', file=self.outFile)
@@ -165,6 +215,7 @@ class VulkanReplayConsumerBodyGenerator(BaseGenerator):
             body += '\n'
             body += '\n'
         if returnType == 'VkResult':
+            body += '    TRACE_EVENT("replay", "{}");\n'.format(name)
             body += '    VkResult replay_result = {};\n'.format(callExpr)
             body += '    CheckResult("{}", returnValue, replay_result);\n'.format(name)
         else:

@@ -211,6 +211,7 @@ def cmake_generate_build_files(args):
     else:
         cmake_generate_args.extend(['-S', '.', '-B', build_dir(args)])
     os.makedirs(work_dir, mode=0o744, exist_ok=True)
+    cmake_generate_args.append('-DCMAKE_EXPORT_COMPILE_COMMANDS=ON')
     cmake_generate_result = subprocess.run(
         cmake_generate_args, cwd=work_dir, env=cmake_generate_env)
     if 0 != cmake_generate_result.returncode:
